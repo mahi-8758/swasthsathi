@@ -39,7 +39,10 @@ const HealthAlerts = () => {
   const [selectedDistrict, setSelectedDistrict] = useState(() => 
     localStorage.getItem("userDistrict") || "Dehradun"
   );
+  const [tempState, setTempState] = useState(selectedState);
+  const [tempDistrict, setTempDistrict] = useState(selectedDistrict);
   const [isEditing, setIsEditing] = useState(false);
+  
   const { data: alerts, isLoading } = useQuery({
     queryKey: ["health-alerts", selectedState, selectedDistrict],
     queryFn: async () => {
@@ -66,11 +69,23 @@ const HealthAlerts = () => {
     },
   });
 
+  const handleEditClick = () => {
+    setTempState(selectedState);
+    setTempDistrict(selectedDistrict);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setTempState(selectedState);
+    setTempDistrict(selectedDistrict);
+    setIsEditing(false);
+  };
+
   const handleSaveLocation = () => {
     try {
       const validation = locationSchema.safeParse({
-        state: selectedState,
-        district: selectedDistrict,
+        state: tempState,
+        district: tempDistrict,
       });
 
       if (!validation.success) {
@@ -82,13 +97,15 @@ const HealthAlerts = () => {
         return;
       }
 
-      localStorage.setItem("userState", selectedState);
-      localStorage.setItem("userDistrict", selectedDistrict);
+      setSelectedState(tempState);
+      setSelectedDistrict(tempDistrict);
+      localStorage.setItem("userState", tempState);
+      localStorage.setItem("userDistrict", tempDistrict);
       setIsEditing(false);
       
       toast({
         title: "Location Saved",
-        description: `Alerts will be shown for ${selectedDistrict}, ${selectedState}`,
+        description: `Alerts will be shown for ${tempDistrict}, ${tempState}`,
       });
     } catch (error) {
       toast({
@@ -145,7 +162,7 @@ const HealthAlerts = () => {
   if (!alerts || alerts.length === 0) return null;
 
   return (
-    <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-background via-muted/30 to-background">
+    <section id="health-alerts" className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-background via-muted/30 to-background">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-4 animate-fade-in">
@@ -169,7 +186,7 @@ const HealthAlerts = () => {
             </div>
             
             <Button
-              onClick={() => setIsEditing(!isEditing)}
+              onClick={isEditing ? handleCancelEdit : handleEditClick}
               variant="outline"
               size="lg"
               className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 hover-scale"
@@ -191,7 +208,7 @@ const HealthAlerts = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="state">State</Label>
-                <Select value={selectedState} onValueChange={setSelectedState}>
+                <Select value={tempState} onValueChange={setTempState}>
                   <SelectTrigger id="state">
                     <SelectValue placeholder="Select state" />
                   </SelectTrigger>
@@ -210,8 +227,8 @@ const HealthAlerts = () => {
                   id="district"
                   type="text"
                   placeholder="Enter district"
-                  value={selectedDistrict}
-                  onChange={(e) => setSelectedDistrict(e.target.value)}
+                  value={tempDistrict}
+                  onChange={(e) => setTempDistrict(e.target.value)}
                   maxLength={100}
                 />
               </div>

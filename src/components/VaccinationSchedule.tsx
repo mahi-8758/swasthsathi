@@ -20,7 +20,7 @@ const VaccinationSchedule = () => {
   });
 
   return (
-    <section className="py-16 px-4 sm:px-6 lg:px-8 bg-background">
+    <section id="vaccination" className="py-16 px-4 sm:px-6 lg:px-8 bg-background">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <div className="inline-flex p-3 rounded-full bg-primary/10 mb-4">

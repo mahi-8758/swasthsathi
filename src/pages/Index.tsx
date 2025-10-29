@@ -8,6 +8,8 @@ import Chatbot from "@/components/Chatbot";
 import DiseaseInfo from "@/components/DiseaseInfo";
 import VaccinationSchedule from "@/components/VaccinationSchedule";
 import HealthAlerts from "@/components/HealthAlerts";
+import ContactUs from "@/components/ContactUs";
+import RibbonBar from "@/components/RibbonBar";
 import type { User } from "@supabase/supabase-js";
 
 const Index = () => {
@@ -61,6 +63,8 @@ const Index = () => {
         </div>
       </header>
 
+      <RibbonBar />
+
       <Hero onChatOpen={() => setIsChatOpen(true)} />
       
       <HealthAlerts />
@@ -68,6 +72,8 @@ const Index = () => {
       <DiseaseInfo />
       
       <VaccinationSchedule />
+      
+      <ContactUs />
       
       <Chatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       

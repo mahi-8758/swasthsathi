@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileHeart, ArrowLeft } from "lucide-react";
+import { Loader2, FileHeart, ArrowLeft, Lock, Check } from "lucide-react";
+import PasswordSecurity from "@/components/PasswordSecurity";
 import type { User } from "@supabase/supabase-js";
 
 interface HealthRecord {
@@ -29,7 +30,11 @@ const HealthRecords = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [record, setRecord] = useState<HealthRecord>({});
+  const [showPasswordSecurity, setShowPasswordSecurity] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -63,7 +68,10 @@ const HealthRecords = () => {
         .maybeSingle();
 
       if (error && error.code !== "PGRST116") throw error;
-      if (data) setRecord(data);
+      if (data) {
+        setRecord(data);
+        setLastSaved(new Date());
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -72,12 +80,58 @@ const HealthRecords = () => {
       });
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
+  // Auto-save with debounce
+  useEffect(() => {
+    // Skip auto-save on initial load
+    if (isInitialLoad || !user || !record.id) return;
+
+    const autoSaveTimer = setTimeout(async () => {
+      await performAutoSave();
+    }, 2000); // Auto-save after 2 seconds of inactivity
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [record]);
+
+  const performAutoSave = async () => {
+    if (!user || !record.id) return;
+
+    setAutoSaving(true);
+    try {
+      const recordData = {
+        user_id: user.id,
+        age: record.age || null,
+        gender: record.gender || null,
+        blood_group: record.blood_group || null,
+        height: record.height || null,
+        weight: record.weight || null,
+        chronic_conditions: record.chronic_conditions || null,
+        allergies: record.allergies || null,
+        current_medications: record.current_medications || null,
+        previous_surgeries: record.previous_surgeries || null,
+        family_history: record.family_history || null,
+        lifestyle_notes: record.lifestyle_notes || null,
+      };
+
+      const { error } = await supabase
+        .from("health_records")
+        .update(recordData)
+        .eq("id", record.id);
+
+      if (error) throw error;
+      setLastSaved(new Date());
+    } catch (error: any) {
+      console.error("Auto-save failed:", error);
+    } finally {
+      setAutoSaving(false);
+    }
+  };
+
+  const performInitialSave = async () => {
+    if (!user || record.id) return;
 
     setSaving(true);
     try {
@@ -96,26 +150,21 @@ const HealthRecords = () => {
         lifestyle_notes: record.lifestyle_notes || null,
       };
 
-      if (record.id) {
-        const { error } = await supabase
-          .from("health_records")
-          .update(recordData)
-          .eq("id", record.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("health_records")
-          .insert([recordData]);
-        if (error) throw error;
-      }
+      const { data, error } = await supabase
+        .from("health_records")
+        .insert([recordData])
+        .select();
 
-      toast({
-        title: "Success!",
-        description: "Your health records have been saved.",
-      });
-      
-      // Refetch to get the updated record with id
-      await fetchHealthRecords(user.id);
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setRecord(data[0]);
+        setLastSaved(new Date());
+        toast({
+          title: "Success!",
+          description: "Your health records have been saved. Future changes will auto-save.",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -132,6 +181,15 @@ const HealthRecords = () => {
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  if (showPasswordSecurity) {
+    return (
+      <PasswordSecurity
+        userEmail={user?.email}
+        onBack={() => setShowPasswordSecurity(false)}
+      />
     );
   }
 
@@ -160,7 +218,7 @@ const HealthRecords = () => {
             </div>
           </div>
 
-          <form onSubmit={handleSave} className="space-y-6">
+          <form className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="age">Age</Label>
@@ -285,19 +343,48 @@ const HealthRecords = () => {
             </div>
 
             <div className="flex gap-3">
+              {!record.id ? (
+                <Button
+                  type="button"
+                  disabled={saving}
+                  onClick={performInitialSave}
+                  className="flex-1 bg-secondary hover:bg-secondary/90"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Health Records"
+                  )}
+                </Button>
+              ) : (
+                <div className="flex-1 flex items-center gap-3 px-4 py-2 rounded-md bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                  <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                      Records Saved ✓
+                    </p>
+                    {lastSaved && (
+                      <p className="text-xs text-green-700 dark:text-green-300">
+                        Last saved: {lastSaved.toLocaleTimeString()}
+                      </p>
+                    )}
+                  </div>
+                  {autoSaving && (
+                    <Loader2 className="w-4 h-4 animate-spin text-green-600" />
+                  )}
+                </div>
+              )}
               <Button
-                type="submit"
-                disabled={saving}
-                className="flex-1 bg-secondary hover:bg-secondary/90"
+                type="button"
+                variant="outline"
+                onClick={() => setShowPasswordSecurity(true)}
+                className="flex-1"
               >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Health Records"
-                )}
+                <Lock className="w-4 h-4 mr-2" />
+                Password & Security
               </Button>
             </div>
           </form>
