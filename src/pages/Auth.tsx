@@ -5,15 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Leaf, Mail, Lock, ArrowLeft } from "lucide-react";
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { Leaf, Mail, Lock, ArrowLeft, ShieldCheck } from "lucide-react";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { executeRecaptcha } = useGoogleReCaptcha();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -31,8 +35,43 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const handleCaptchaVerification = async () => {
+    if (!executeRecaptcha) {
+      toast({
+        title: "CAPTCHA Error",
+        description: "CAPTCHA service is not available",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      const token = await executeRecaptcha("auth");
+      setCaptchaToken(token);
+      setCaptchaVerified(true);
+      return true;
+    } catch (error) {
+      toast({
+        title: "CAPTCHA Verification Failed",
+        description: "Please try again",
+        variant: "destructive",
+      });
+      setCaptchaVerified(false);
+      return false;
+    }
+  };
+
   const handlePasswordAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Verify CAPTCHA first
+    if (!captchaVerified) {
+      const isCaptchaValid = await handleCaptchaVerification();
+      if (!isCaptchaValid) {
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -92,6 +131,15 @@ const Auth = () => {
             </p>
           </div>
 
+          {captchaVerified && (
+            <div className="mb-6 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <span className="text-sm text-green-700 dark:text-green-300 font-medium">
+                Security verified with CAPTCHA ✓
+              </span>
+            </div>
+          )}
+
           <form onSubmit={handlePasswordAuth} className="space-y-4">
             <div>
               <label className="text-sm font-medium text-foreground flex items-center gap-2 mb-2">
@@ -129,8 +177,14 @@ const Auth = () => {
               disabled={loading}
               className="w-full bg-secondary hover:bg-secondary/90"
             >
-              {loading ? "Loading..." : isLogin ? "Sign In" : "Sign Up"}
+              {loading ? "Loading..." : captchaVerified ? (isLogin ? "Sign In Securely" : "Sign Up Securely") : (isLogin ? "Sign In" : "Sign Up")}
             </Button>
+
+            {!captchaVerified && (
+              <p className="text-xs text-center text-muted-foreground mt-2">
+                🔒 Your login will be secured with reCAPTCHA verification
+              </p>
+            )}
 
             <div className="text-center">
               <button
