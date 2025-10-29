@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Send, Loader2, MapPin, Phone, Globe } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -95,25 +96,21 @@ const ContactUs = () => {
     setLoading(true);
 
     try {
-      // Send email using Web3Forms (free email service)
-      const response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          access_key: "4f142e97-3eb9-4a60-a96d-3a4da3a0d7a1", // Web3Forms free key
+      // Call Supabase Edge Function to send email via Resend
+      const { data, error } = await supabase.functions.invoke("contact-email", {
+        body: {
           name: formData.name,
           email: formData.email,
           subject: formData.subject,
           message: formData.message,
-          from_name: "SWASTH SATHI Contact Form",
-          to_email: "kumarmahi8758@gmail.com", // Default recipient email
-          redirect: window.location.href,
-        }),
+        },
       });
 
-      if (response.ok) {
+      if (error) {
+        throw new Error(error.message || "Failed to send email");
+      }
+
+      if (data?.success) {
         setSubmitted(true);
         setFormData({
           name: "",
@@ -124,16 +121,17 @@ const ContactUs = () => {
 
         toast({
           title: "Success! 📧",
-          description: "Your message has been sent to the creator. We'll get back to you soon!",
+          description: "Your message has been sent to kumarmahi8758@gmail.com. We'll get back to you soon!",
         });
 
         setTimeout(() => {
           setSubmitted(false);
         }, 3000);
       } else {
-        throw new Error("Failed to send message");
+        throw new Error(data?.error || "Failed to send message");
       }
     } catch (error: any) {
+      console.error("Contact form error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to send your message. Please try again.",
