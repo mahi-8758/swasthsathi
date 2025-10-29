@@ -36,7 +36,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-          <h1 className="text-lg sm:text-xl font-bold text-foreground">AI Health Platform</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-foreground">🏥 SWASTH SATHI</h1>
           <div className="flex gap-2">
             {user ? (
               <div className="flex items-center gap-2">

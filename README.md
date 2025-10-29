@@ -9,7 +9,7 @@
 <br/>
 
 <div align="center">
-  <h1>🏥 AI Health Awareness Platform</h1>
+  <h1>🏥 SWASTH SATHI</h1>
   <p>
     <strong>Empowering Communities with AI-Driven Health Information</strong>
   </p>
