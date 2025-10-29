@@ -6,7 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, Send, Loader2, MapPin, Phone, Globe } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -96,40 +95,118 @@ const ContactUs = () => {
     setLoading(true);
 
     try {
-      // Call Supabase Edge Function to send email via Resend
-      const { data, error } = await supabase.functions.invoke("contact-email", {
-        body: {
-          name: formData.name,
-          email: formData.email,
-          subject: formData.subject,
-          message: formData.message,
+      // Get API key from environment
+      const apiKey = import.meta.env.VITE_RESEND_API_KEY;
+      
+      if (!apiKey) {
+        throw new Error("Resend API key not configured");
+      }
+
+      // Prepare email content for admin
+      const adminEmailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">New Contact Form Submission</h2>
+          
+          <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            <p><strong>Name:</strong> ${formData.name}</p>
+            <p><strong>Email:</strong> <a href="mailto:${formData.email}">${formData.email}</a></p>
+            <p><strong>Subject:</strong> ${formData.subject}</p>
+          </div>
+
+          <div style="background-color: #f9fafb; padding: 16px; border-left: 4px solid #2563eb; margin: 16px 0;">
+            <h3 style="margin-top: 0; color: #1f2937;">Message:</h3>
+            <p style="white-space: pre-wrap; word-wrap: break-word;">${formData.message}</p>
+          </div>
+
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          <p style="color: #6b7280; font-size: 12px;">
+            This email was sent from SWASTH SATHI contact form. 
+            <br/>
+            <strong>Reply to:</strong> ${formData.email}
+          </p>
+        </div>
+      `;
+
+      // Prepare email content for user
+      const userEmailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Thank You, ${formData.name}!</h2>
+          
+          <p>We have received your message and appreciate you reaching out to SWASTH SATHI.</p>
+          
+          <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            <p><strong>Your Message:</strong></p>
+            <p style="white-space: pre-wrap; word-wrap: break-word; color: #4b5563;">${formData.message}</p>
+          </div>
+
+          <p>Our team will review your message and get back to you as soon as possible at <strong>${formData.email}</strong>.</p>
+
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+          <p style="color: #6b7280; font-size: 12px;">
+            <strong>SWASTH SATHI</strong> - Empowering Communities with AI-Driven Health Information
+            <br/>
+            © 2025 All rights reserved.
+          </p>
+        </div>
+      `;
+
+      // Send email to admin
+      const adminResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          from: "SWASTH SATHI <onboarding@resend.dev>",
+          to: "kumarmahi8758@gmail.com",
+          subject: `New Contact Form Submission: ${formData.subject}`,
+          html: adminEmailHtml,
+        }),
       });
 
-      if (error) {
-        throw new Error(error.message || "Failed to send email");
+      if (!adminResponse.ok) {
+        const errorData = await adminResponse.json();
+        console.error("Admin email error:", errorData);
+        throw new Error("Failed to send admin notification");
       }
 
-      if (data?.success) {
-        setSubmitted(true);
-        setFormData({
-          name: "",
-          email: "",
-          subject: "",
-          message: "",
-        });
+      // Send confirmation email to user
+      const userResponse = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "SWASTH SATHI <onboarding@resend.dev>",
+          to: formData.email,
+          subject: "We received your message - SWASTH SATHI",
+          html: userEmailHtml,
+        }),
+      });
 
-        toast({
-          title: "Success! 📧",
-          description: "Your message has been sent to kumarmahi8758@gmail.com. We'll get back to you soon!",
-        });
-
-        setTimeout(() => {
-          setSubmitted(false);
-        }, 3000);
-      } else {
-        throw new Error(data?.error || "Failed to send message");
+      if (!userResponse.ok) {
+        console.error("User confirmation email failed, but admin email was sent");
       }
+
+      // Success
+      setSubmitted(true);
+      setFormData({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+      });
+
+      toast({
+        title: "Success! 📧",
+        description: "Your message has been sent to kumarmahi8758@gmail.com. We'll get back to you soon!",
+      });
+
+      setTimeout(() => {
+        setSubmitted(false);
+      }, 3000);
     } catch (error: any) {
       console.error("Contact form error:", error);
       toast({
