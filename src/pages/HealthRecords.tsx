@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, FileHeart, ArrowLeft, Lock, Check } from "lucide-react";
 import PasswordSecurity from "@/components/PasswordSecurity";
+import GoogleTranslateWidget from "@/components/GoogleTranslateWidget";
 import type { User } from "@supabase/supabase-js";
 
 interface HealthRecord {
@@ -195,6 +196,9 @@ const HealthRecords = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-secondary/10 via-background to-primary/5 py-8 px-4">
+      <div className="absolute top-4 right-4">
+        <GoogleTranslateWidget />
+      </div>
       <div className="max-w-3xl mx-auto">
         <Button
           variant="ghost"
