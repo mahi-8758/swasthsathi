@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Green leaf design for SWASTH SATHI -->
+  <defs>
+    <linearGradient id="leafGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Left lower leaf -->
+  <path d="M 40 120 Q 30 100 40 70 Q 50 60 70 80 Q 60 100 50 130 Z" fill="url(#leafGradient)" opacity="0.9"/>
+  
+  <!-- Right upper leaf -->
+  <path d="M 130 40 Q 140 20 160 30 Q 170 40 160 80 Q 150 90 130 70 Z" fill="url(#leafGradient)" opacity="1"/>
+  
+  <!-- Center accent leaf -->
+  <path d="M 85 95 Q 90 75 110 65 Q 125 60 130 85 Q 125 110 110 120 Q 90 125 85 110 Z" fill="#22c55e" opacity="0.95"/>
+  
+  <!-- White accent mark on left leaf -->
+  <path d="M 50 95 Q 55 85 60 100" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8"/>
+  
+  <!-- White accent mark on right leaf -->
+  <path d="M 135 70 Q 140 55 145 75" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+</svg>

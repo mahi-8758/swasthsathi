@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[env]
+  VITE_SUPABASE_URL = "https://cpcinfhotflsiuwbjsjr.supabase.co"
+  VITE_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwY2luZmhvdGZsc2l1d2Jqc2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjk3MDk3NDcsImV4cCI6MjA0NTI4NTc0N30.E-Qm_qCn_9mHFCKGiLlpLd5oNVcl5pL3lL9wQ8-JMEU"
+  VITE_RESEND_API_KEY = "re_GAS5QKwL_2HJmGewhav8VSQc8y2rWvJ9p"
+
+# Supabase configuration for edge functions
+[functions]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
